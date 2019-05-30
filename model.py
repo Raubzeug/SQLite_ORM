@@ -9,16 +9,17 @@ class Model:
         self._con = connection
         columns = self.__class__.__dict__['columns']
         for col in columns:
+            atr_name = col[0]
             if col[1].pk or col[1].req:
-                if col[0] not in kwargs:
-                    raise AttributeError(f'{col[0]} must be given')
+                if atr_name not in kwargs:
+                    raise AttributeError(f'{atr_name} must be given')
                 else:
-                    self.__dict__[col[0]] = kwargs[col[0]]
+                    setattr(self, atr_name, kwargs[atr_name])
             else:
                 if col[0] in kwargs:
-                    self.__dict__[col[0]] = kwargs[col[0]]
+                    setattr(self, atr_name, kwargs[atr_name])
                 else:
-                    self.__dict__[col[0]] = 'NULL'
+                    setattr(self, atr_name, 'NULL')
         self._insert_data()
 
     def _insert_data(self):
@@ -46,27 +47,26 @@ class Model:
                    if not key.startswith('_')]
         setattr(cls, 'columns', columns)
         for col in columns:
-            col[1].__dict__['name'] = col[0]
-
+            setattr(col[1], 'name', col[0])
         table_name = cls.__name__.lower()
         sql = f'CREATE TABLE {table_name} ('
         fk = None
         for i in range(len(columns)):
-            columns[i][1].__dict__['name'] = columns[i][0]
-            columns[i][1].__dict__['table'] = cls.__name__
-            if 'foreignkey' in columns[i][1].__dict__:
-                fk = (columns[i][0], columns[i][1].__dict__['foreignkey'])
+            column_name, column = columns[i][0], columns[i][1]
+            setattr(column, 'name', columns[i][0])
+            setattr(column, 'table', cls.__name__)
+            if 'foreignkey' in column.__dict__:
+                fk = (column_name, column.__dict__['foreignkey'])
                 setattr(cls, 'fk', fk)
-                # print(cls.__name__, cls.__dict__)
             if i == len(columns) - 1:
                 if fk == None:
-                    sql += columns[i][0] + ' ' + str(columns[i][1]) + ');'
+                    sql += column_name + ' ' + str(column) + ');'
                 else:
                     con.execute("PRAGMA foreign_keys = 1")
-                    sql += columns[i][0] + ' ' + str(columns[i][1]) + ','
+                    sql += column_name + ' ' + str(column) + ','
                     sql += f' FOREIGN KEY ({fk[0]}) REFERENCES {fk[1].table}({fk[1].name}));'
             else:
-                sql += columns[i][0] + ' ' + str(columns[i][1]) + ',' + ' '
+                sql += column_name + ' ' + str(column) + ',' + ' '
         cur = con.cursor()
         try:
             cur.execute(sql)
@@ -100,11 +100,11 @@ class Model:
             sql += '* FROM '
 
         sql += table_name
-
         if not condition:
             sql += ';'
         else:
             sql += f' WHERE {condition};'
+
         cur = con.cursor()
         try:
             cur.execute(sql)

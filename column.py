@@ -5,8 +5,8 @@ class Column():
             raise TypeError("column type may be 'INTEGER', 'TEXT'")
         else:
             self.data_type = data_type.upper()
-        self.req = '' if req == False else 'NOT NULL'
-        self.pk = '' if pk == False else 'PRIMARY KEY'
+        self.req = 'NOT NULL' if req else ''
+        self.pk = 'PRIMARY KEY' if pk else ''
 
     def __str__(self):
         """this is made to simplify representation in Model class"""
